@@ -1,4 +1,4 @@
-# this assumes generator matrices are k x n, i.e. encodeing is wG
+# this assumes generator matrices are k x n, i.e. encoding is wG
 # and parity-check matrices are (n-k) x n, i.e. checking is Px
 
 # Facts:
@@ -9,7 +9,7 @@
 # 2 can be generalized to non-standard-form generators by forming A from the non-leading columns and then inserting columns of I_{n-k} into A^T at the indices where the non-leading columns in fact occurred.
 # (where "leading column" means a column equal to a standard basis vector)
 
-def gen2par(G):
+def gen2par(G, F = GF(2)):
 	# is also par2gen
 	R = G.rref() # vs .echelon_form()?
 
@@ -18,7 +18,7 @@ def gen2par(G):
 	i = 0
 	non_leading_columns = []
 
-	ei = vector(GF(2), [0]*i + [1] + [0]*(k-i-1))
+	ei = vector(F, [0]*i + [1] + [0]*(k-i-1))
 	for j in range(n):
 		if R.column(j) != ei:
 			non_leading_columns.append(j)
@@ -28,7 +28,7 @@ def gen2par(G):
 				for jj in range(j+1, n):
 					non_leading_columns.append(jj)
 				break
-			ei = vector(GF(2), [0]*i + [1] + [0]*(k-i-1))
+			ei = vector(F, [0]*i + [1] + [0]*(k-i-1))
 
 	At = R.matrix_from_columns(non_leading_columns).transpose()
 	P_cols = []
@@ -36,11 +36,11 @@ def gen2par(G):
 	i = 0
 	for j in range(n):
 		if i < len(non_leading_columns) and j == non_leading_columns[i]:
-			P_cols.append(vector(GF(2), [0]*i + [1] + [0]*(n-k-i-1)))
+			P_cols.append(vector(F, [0]*i + [1] + [0]*(n-k-i-1)))
 			i += 1
 		else:
 			P_cols.append(-At.column(j-i))
-	return matrix(P_cols).transpose()
+	return matrix(P_cols).transpose() # transpose because matrix() takes a list of rows
 
 
 def print_from_parity(P):
