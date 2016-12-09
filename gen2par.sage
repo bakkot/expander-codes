@@ -11,6 +11,9 @@
 
 def gen2par(G, F = GF(2)):
 	# is also par2gen
+
+	# Assumes G is not deficient, i.e., is of rank equal to its height.
+	# If this is not the case, rref it and stip off excess rows.
 	R = G.rref() # vs .echelon_form()?
 
 	k = G.nrows()
@@ -83,6 +86,23 @@ Had = MatrixSpace(GF(2), 3, 7)([
 [0, 1, 1, 0, 0, 1, 1],
 [1, 0, 1, 0, 1, 0, 1]
 ])
+
+Par = MatrixSpace(GF(2), 1, 3)([
+[1, 1, 1]
+])
+#print(vector(GF(2), [0, 1]) * gen2par(Par))
+
+T = MatrixSpace(GF(2), 3, 4)([
+[1, 0, 1, 1],
+[0, 1, 1, 1],
+[1, 1, 0, 0],
+])
+
+print(T.rref())
+
+print_from_parity(T)
+exit(0)
+
 
 P = gen2par(G)
 

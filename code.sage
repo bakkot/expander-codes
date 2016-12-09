@@ -1,6 +1,47 @@
+# from gen2par.sage import gen2par
+# ugh
+def gen2par(G, F = GF(2)):
+  # is also par2gen
+  R = G.rref() # vs .echelon_form()?
+
+  k = G.nrows()
+  n = G.ncols()
+  i = 0
+  non_leading_columns = []
+
+  print()
+  print(R.str())
+  ei = vector(F, [0]*i + [1] + [0]*(k-i-1))
+  for j in range(n):
+    if R.column(j) != ei:
+      non_leading_columns.append(j)
+    else:
+      i += 1
+      if i == k:
+        for jj in range(j+1, n):
+          non_leading_columns.append(jj)
+        break
+      ei = vector(F, [0]*i + [1] + [0]*(k-i-1))
+
+  At = R.matrix_from_columns(non_leading_columns).transpose()
+  print(At.nrows(), At.ncols())
+  P_cols = []
+
+  i = 0
+  for j in range(n):
+    if i < len(non_leading_columns) and j == non_leading_columns[i]:
+      P_cols.append(vector(F, [0]*i + [1] + [0]*(n-k-i-1)))
+      i += 1
+    else:
+      P_cols.append(-At.column(j-i))
+  print([len(p) for p in P_cols])
+  return matrix(P_cols).transpose() # transpose because matrix() takes a list of rows
+
+
 class ParityCode:
-  # def __init__(self, k):
-    # self.k = k
+  def __init__(self, n):
+    self.n = n
+    self.P = MatrixSpace(GF(2), 1, n)([1]*n)
   def encode(self, mess):
     return mess + [sum(x for x in mess) % 2]
   def is_codeword(self, w):
@@ -18,11 +59,58 @@ class Expander:
     # Codewords are bit arrays of length d*l.
     self.G = G
     self.S = S
+    self.n = G.size()
     self.A, self.B = G.bipartition()
     self.edge_map = { e:i for (i, e) in enumerate(G.edges(labels = False)) }
 
-  def is_codeword(self, w):
+    S_P_height = self.S.P.nrows()
+    row_blocks = []
     for v in G.vertices():
+      Ev = self.G.edges_incident(v, labels = False)
+      x_indices = [self.edge_map[e] for e in Ev]
+      row_block = []
+      ind = 0
+      for i in range(self.n):
+        if ind < len(x_indices) and i == x_indices[ind]:
+          row_block.append(self.S.P.column(ind))
+          ind += 1
+        else:
+          row_block.append(vector(GF(2), [0]*S_P_height))
+      row_blocks.append(matrix(GF(2), row_block))
+    self.P = block_matrix(row_blocks, ring = GF(2), ncols = len(row_blocks), subdivide = False).transpose()
+    # This is an extremely silly way of mashing things together, you say? Yes it is. But it does work.
+    self.P = self.P.rref()
+    excess = []
+    for i in range(self.P.nrows() - 1, -1, -1):
+      if self.P.row(i) == 0:
+        excess.append(i)
+      else:
+        break
+    self.P = self.P.delete_rows(excess)
+    self.Gen = gen2par(self.P)
+    print(self.Gen.str())
+
+    w = vector(GF(2), [1]*self.Gen.nrows())
+    print(self.encode(w))
+    print(self.is_codeword(self.encode(w)))
+
+    t = self.encode(w)
+    t[0] = 0
+    print('t')
+    print(t)
+    m = self.nearest_codeword(t)
+    print('mmmm')
+    print(m)
+    print(t)
+    print(self.encode(w))
+    print('----')
+    print(self.is_codeword(m))
+
+  def encode(self, w):
+    return vector(GF(2), w) * self.Gen
+
+  def is_codeword(self, w):
+    for v in self.G.vertices():
       Ev = self.G.edges_incident(v, labels = False)
       x_indices = [self.edge_map[e] for e in Ev]
       x = [w[ind] for ind in x_indices]
@@ -30,6 +118,7 @@ class Expander:
     return True
 
   def nearest_codeword(self, w):
+    w = w[:]
     # Uses Zemor's algorithm from On Expander Codes
     todos = [self.A, self.B] # left and right todos
 
@@ -53,8 +142,8 @@ class Expander:
             # print(e, v, 1-i)
             todos[1-i].add(e[0] if e[0] != v else e[1])
           # print(i, todos[1-i])
-      print(w)
-      print(todos)
+      # print(w)
+      # print(todos)
       # if len(todos[0]) >= lens[0] or len(todos[1]) >= lens[1]:
       #   raise "Fail: error sizes are not decreasing"
     return w
@@ -70,8 +159,9 @@ G0 = BipartiteGraph(BG0.adjacency_matrix())
 BG = loads('x\x9cU\xcf\xc9n\x830\x10\x06\xe0&a5$t\xdf\xf7M\xf4\x92\xd7\xe8a$\x0e\x958F\x08\x12\x8b\xa0\xd0\xc0\xd4\xa0\xf6\x12\xa9=U\xbcu\x7f\xa7\xed!\x17\x7fx\xf0\x8c\x7f\x7f\xf6\xa7*\xcd\xe58\x7fK\xeb\xb9\xfaE<\xafW\xee=}q\x7f\xc5\x830v\x93wY\xe4\xf3F\xce\xd8\xe8b#\xa9+\xc5f\x14{I\x996\xf2#\xa9\xeaF\xb1\x15\xc5N\x92\xa5\xd3\x85\\\xce\xd8\xde\x98\x9a\xa5\xea\xef\xfb\xff\x80\x12\xed\xb2.\xa6\x8bR&\x1bu\xc1N\xd8M\xd8\ri\x8bz\xd4\xa7\x01\x19d\x92E69\xe4\x92 \x8f|\x1a\xd2\x88\x029a\xb1>\x14}\xb3\x07\r\xe8\xc3\x00\x0e\xd1j\xc2\x11\x140\xc0 \x0bnC\x1b\xee\xc0!\xdc\xd5\xe3\xe1\x1et\xe0>\xf4\xe0\x01.\xd5\xff\x0fq\xb5\xae\x1f\xc1\x11<F\x10\x17\x9e@\x1f\x9e\xeaX\xf0\x0c\xea\xbesD\xd4\xf5\x0b\xa8\xfb/\x11X\xf7]A\x9d\xeb\x1a\xf1\xf5\xfe\x06\x8f\xd0\xfb[\xb9\xe2\xbb06\xcb\xaa\xaa\x15\xdfw\xb1xm\xcb\xa6\x90\xb3\\*~\xe8\xda\xe6\x85\x1f\xdbl\xfc\x03\xa6+y\xc9')
 G = BipartiteGraph(BG.adjacency_matrix())
 
+# x = Expander(G0, ParityCode(5))
 
-x = Expander(G, ParityCode())
+x = Expander(G, ParityCode(3))
 w = x.nearest_codeword([1]*3*16)
 # w = x.nearest_codeword([1]*5*128)
 print(w)
