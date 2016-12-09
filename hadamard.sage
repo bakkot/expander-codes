@@ -46,13 +46,14 @@ def to_bits(n, d):
 	w = bin(d)[2:]
 	return [[0]*(n-len(w)) + list(int(b) for b in w)]
 
-class Had:
+class Hadamard:
   def __init__(self, k):
   	self.k = k
   	self.d = 2**(k-1)
+  	self.n = 2**k - 1
 
   	cols = []
-  	for i in range(0, 2**k):
+  	for i in range(1, 2**k):
   		cols += to_bits(k, i)
   	self.G = matrix(GF(2), cols).transpose()
   	print(self.G)
@@ -69,21 +70,39 @@ class Had:
   		ones = 0
   		for j in range(2**self.k):
 	  		k = j ^^ (2**i)
+
+	  		# correct for lack of leading-zeros column
+	  		j -= 1
+	  		k -= 1
+	  		if j == -1:
+	  			if k == -1:
+	  				continue
+	  			if w[k] == 1:
+	  				ones += 1
+	  				continue
+	  		if k == -1:
+	  			if w[j] == 1:
+		  			ones += 1
+		  			continue	  			
 	  		if w[j] + w[k] == 1:
 	  			ones += 1
+
 	  	x.append(1 if ones >= 2**(self.k - 1) else 0)
   	return vector(GF(2), x)
 
   def nearest_codeword(self, w):
   	return self.encode(self.decode(w))
 
-H = Had(4)
-x = H.encode([1, 0, 1, 1])
+  def is_codeword(self, w):
+  	return self.P * w == 0
+
+H = Hadamard(4)
+x = H.encode([1, 0, 0, 0])
 print(x)
-# d = H.decode(x)
-# print(d)
+d = H.decode(x)
+print(d)
 # print(H.encode(d))
-y = x + vector(GF(2), ([1]*3 + [0]*((2**4)-3)))
+y = x + vector(GF(2), ([1]*2 + [0]*((2**4-1)-2)))
 d = H.nearest_codeword(y)
 print(d)
 
