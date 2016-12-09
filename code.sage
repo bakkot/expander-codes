@@ -9,8 +9,6 @@ def gen2par(G, F = GF(2)):
   i = 0
   non_leading_columns = []
 
-  print()
-  print(R.str())
   ei = vector(F, [0]*i + [1] + [0]*(k-i-1))
   for j in range(n):
     if R.column(j) != ei:
@@ -24,7 +22,6 @@ def gen2par(G, F = GF(2)):
       ei = vector(F, [0]*i + [1] + [0]*(k-i-1))
 
   At = R.matrix_from_columns(non_leading_columns).transpose()
-  print(At.nrows(), At.ncols())
   P_cols = []
 
   i = 0
@@ -34,7 +31,6 @@ def gen2par(G, F = GF(2)):
       i += 1
     else:
       P_cols.append(-At.column(j-i))
-  print([len(p) for p in P_cols])
   return matrix(P_cols).transpose() # transpose because matrix() takes a list of rows
 
 
@@ -88,7 +84,6 @@ class Expander:
         break
     self.P = self.P.delete_rows(excess)
     self.Gen = gen2par(self.P)
-    print(self.Gen.str())
 
     w = vector(GF(2), [1]*self.Gen.nrows())
     print(self.encode(w))
@@ -117,7 +112,7 @@ class Expander:
       if not self.S.is_codeword(x): return False
     return True
 
-  def nearest_codeword(self, w):
+  def nearest_codeword_zemor(self, w):
     w = w[:]
     # Uses Zemor's algorithm from On Expander Codes
     todos = [self.A, self.B] # left and right todos
@@ -143,10 +138,36 @@ class Expander:
             todos[1-i].add(e[0] if e[0] != v else e[1])
           # print(i, todos[1-i])
       # print(w)
-      # print(todos)
+      print(todos)
       # if len(todos[0]) >= lens[0] or len(todos[1]) >= lens[1]:
       #   raise "Fail: error sizes are not decreasing"
     return w
+
+  def nearest_codeword(self, w):
+    to_check = self.G.edges(labels = False)
+    while len(to_check) > 0:
+      to_flip = set()
+      for e in to_check:
+        count = 0
+        for v in e:
+          Ev = self.G.edges_incident(v, labels = False)
+          x_indices = [self.edge_map[e] for e in Ev]
+          x = [w[ind] for ind in x_indices]
+          if not self.S.is_codeword(x):
+            count += 1
+        if count == 2: to_flip.add(e)
+      to_check = set()
+      print(to_flip)
+      for e in to_flip:
+        print(self.edge_map[e])
+        # in the c = 2 case, "more unsatisfied constraints" is equilavent to "only".
+        for v in e:
+          for o in self.G.edges_incident(v, labels = False):
+            to_check.add(o)
+        w[self.edge_map[e]] += 1 # flip, in GF(2)
+      print('c', to_check)
+    return w
+
 
 
 
@@ -159,11 +180,12 @@ G0 = BipartiteGraph(BG0.adjacency_matrix())
 BG = loads('x\x9cU\xcf\xc9n\x830\x10\x06\xe0&a5$t\xdf\xf7M\xf4\x92\xd7\xe8a$\x0e\x958F\x08\x12\x8b\xa0\xd0\xc0\xd4\xa0\xf6\x12\xa9=U\xbcu\x7f\xa7\xed!\x17\x7fx\xf0\x8c\x7f\x7f\xf6\xa7*\xcd\xe58\x7fK\xeb\xb9\xfaE<\xafW\xee=}q\x7f\xc5\x830v\x93wY\xe4\xf3F\xce\xd8\xe8b#\xa9+\xc5f\x14{I\x996\xf2#\xa9\xeaF\xb1\x15\xc5N\x92\xa5\xd3\x85\\\xce\xd8\xde\x98\x9a\xa5\xea\xef\xfb\xff\x80\x12\xed\xb2.\xa6\x8bR&\x1bu\xc1N\xd8M\xd8\ri\x8bz\xd4\xa7\x01\x19d\x92E69\xe4\x92 \x8f|\x1a\xd2\x88\x029a\xb1>\x14}\xb3\x07\r\xe8\xc3\x00\x0e\xd1j\xc2\x11\x140\xc0 \x0bnC\x1b\xee\xc0!\xdc\xd5\xe3\xe1\x1et\xe0>\xf4\xe0\x01.\xd5\xff\x0fq\xb5\xae\x1f\xc1\x11<F\x10\x17\x9e@\x1f\x9e\xeaX\xf0\x0c\xea\xbesD\xd4\xf5\x0b\xa8\xfb/\x11X\xf7]A\x9d\xeb\x1a\xf1\xf5\xfe\x06\x8f\xd0\xfb[\xb9\xe2\xbb06\xcb\xaa\xaa\x15\xdfw\xb1xm\xcb\xa6\x90\xb3\\*~\xe8\xda\xe6\x85\x1f\xdbl\xfc\x03\xa6+y\xc9')
 G = BipartiteGraph(BG.adjacency_matrix())
 
-# x = Expander(G0, ParityCode(5))
+x = Expander(G0, ParityCode(5))
+# w = x.nearest_codeword([1]*5*128)
+exit()
 
 x = Expander(G, ParityCode(3))
 w = x.nearest_codeword([1]*3*16)
-# w = x.nearest_codeword([1]*5*128)
 print(w)
 print(x.is_codeword(w))
 # print(x.is_codeword([0]*3*16))

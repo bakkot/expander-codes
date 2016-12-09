@@ -87,6 +87,8 @@ Had = MatrixSpace(GF(2), 3, 7)([
 [1, 0, 1, 0, 1, 0, 1]
 ])
 
+print(gen2par(Had))
+
 Par = MatrixSpace(GF(2), 1, 3)([
 [1, 1, 1]
 ])
@@ -97,11 +99,6 @@ T = MatrixSpace(GF(2), 3, 4)([
 [0, 1, 1, 1],
 [1, 1, 0, 0],
 ])
-
-print(T.rref())
-
-print_from_parity(T)
-exit(0)
 
 
 P = gen2par(G)
