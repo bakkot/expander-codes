@@ -66,20 +66,24 @@ class Had:
   def decode(self, w):
   	x = []
   	for i in range(self.k):
-  		j = randrange(2**self.k)
-  		k = j ^^ (2**i)
-  		x.append(w[j] + w[k])
+  		ones = 0
+  		for j in range(2**self.k):
+	  		k = j ^^ (2**i)
+	  		if w[j] + w[k] == 1:
+	  			ones += 1
+	  	x.append(1 if ones >= 2**(self.k - 1) else 0)
   	return vector(GF(2), x)
 
   def nearest_codeword(self, w):
-  	# not actually nearest, given randomness... but whatever.
-  	return self.decode(w) * self.G
+  	return self.encode(self.decode(w))
 
 H = Had(4)
-x = H.encode([1, 0, 1, 0])
+x = H.encode([1, 0, 1, 1])
 print(x)
-d = H.decode(x)
+# d = H.decode(x)
+# print(d)
+# print(H.encode(d))
+y = x + vector(GF(2), ([1]*3 + [0]*((2**4)-3)))
+d = H.nearest_codeword(y)
 print(d)
-print(H.encode(d))
-
 
